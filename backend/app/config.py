@@ -19,6 +19,9 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://resume_matcher:resume_matcher@localhost:5432/resume_matcher"
     )
 
+    # Phase 3
+    spacy_model: str = "en_core_web_sm"
+
     # Phase 6
     embedding_model_provider: str = "sentence_transformers"
     embedding_model_name: str = "all-MiniLM-L6-v2"

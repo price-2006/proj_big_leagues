@@ -1,0 +1,17 @@
+Senior Data Engineer
+
+Minimum Qualifications
+- 5+ years of experience in data engineering
+- Strong proficiency in Python and SQL
+- Experience with Spark and Airflow
+- Must have experience designing ETL pipelines
+
+Nice to Have
+- Experience with Kafka
+- Familiarity with Terraform
+- Preferred: background in the healthcare industry
+
+What You'll Do
+- Design and maintain large-scale data pipelines
+- Partner with analytics and product teams
+- Mentor junior data engineers

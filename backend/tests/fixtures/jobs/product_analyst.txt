@@ -1,0 +1,17 @@
+Product Analyst
+
+Requirements
+- Bachelor's degree in Business, Economics, or a related field
+- 2+ years of experience in a data or analytics role
+- Proficiency in SQL and Excel
+- Strong communication and stakeholder management skills
+
+Preferred Qualifications
+- Experience with Python for data analysis
+- Familiarity with Tableau or Looker
+- Background in e-commerce or marketplaces is a plus
+
+Responsibilities
+- Analyze product usage data to identify opportunities
+- Partner with product managers to define success metrics
+- Present findings to cross-functional stakeholders

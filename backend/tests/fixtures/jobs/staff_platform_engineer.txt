@@ -1,0 +1,17 @@
+Staff Platform Engineer
+
+Requirements
+- 8+ years of experience building distributed systems
+- Deep expertise in Kubernetes and Docker
+- Proven track record leading large technical initiatives
+- Required: experience with Terraform and GCP or AWS
+
+Preferred Qualifications
+- Experience with Go
+- Familiarity with gRPC
+- Contributions to open source projects are a plus
+
+Responsibilities
+- Mentor junior engineers and guide architecture decisions
+- Define the long-term technical roadmap for the platform team
+- Partner with staff and principal engineers across the org

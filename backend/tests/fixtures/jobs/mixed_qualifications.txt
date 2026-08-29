@@ -1,0 +1,8 @@
+Full Stack Engineer
+
+Qualifications
+- Must have 3+ years of experience with React and Node.js
+- Must have strong understanding of REST APIs
+- Should have experience with TypeScript
+- Nice to have: experience with GraphQL
+- Bonus: contributions to open source

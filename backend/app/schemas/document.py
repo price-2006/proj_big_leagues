@@ -20,7 +20,7 @@ class TextLine(BaseModel):
 
 
 class ParsedDocument(BaseModel):
-    file_type: Literal["pdf", "docx"]
+    file_type: Literal["pdf", "docx", "text"]
     raw_text: str
     lines: list[TextLine]
     page_count: int | None = None  # PDF only

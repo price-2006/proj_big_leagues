@@ -1,0 +1,25 @@
+Junior Backend Engineer
+
+About Us
+We are a fast-growing fintech startup building payment infrastructure for small businesses.
+
+Requirements
+- Bachelor's degree in Computer Science or related field
+- 1+ years of experience with Python or Java
+- Familiarity with SQL and relational databases
+- Must have strong communication skills
+
+Preferred Qualifications
+- Experience with Docker and Kubernetes
+- Familiarity with AWS
+- Nice to have: exposure to FastAPI or Flask
+
+Responsibilities
+- Build and maintain backend services
+- Write unit tests and participate in code reviews
+- Collaborate with senior engineers on system design
+
+Benefits
+- Health insurance
+- 401k matching
+- Flexible work hours
