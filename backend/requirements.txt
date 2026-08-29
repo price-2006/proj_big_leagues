@@ -1,8 +1,8 @@
 # Phase 0: just enough to boot the API and talk to Postgres via async
-# SQLAlchemy + Alembic migrations. ML/NLP libraries (PyTorch, spaCy,
-# Sentence-Transformers, XGBoost/LightGBM, PyMuPDF, python-docx) are added
-# in the phases that actually use them (see docs/ROADMAP.md) rather than
-# installed speculatively here.
+# SQLAlchemy + Alembic migrations. Remaining ML/NLP libraries (PyTorch,
+# spaCy, Sentence-Transformers, XGBoost/LightGBM) are added in the phases
+# that actually use them (see docs/ROADMAP.md) rather than installed
+# speculatively here.
 #
 # Lower-bound constraints, not exact pins — run
 #   pip install -r requirements.txt && pip freeze > requirements.lock.txt
@@ -16,3 +16,7 @@ SQLAlchemy>=2.0.35
 asyncpg>=0.29
 alembic>=1.13
 python-dotenv>=1.0
+
+# Phase 1: document parsing
+PyMuPDF>=1.24
+python-docx>=1.1
