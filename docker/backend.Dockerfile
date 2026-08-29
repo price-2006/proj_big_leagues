@@ -16,7 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY backend/requirements.txt .
 RUN pip install -r requirements.txt \
-    && python -m spacy download en_core_web_sm
+    && python -m spacy download en_core_web_sm \
+    && python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 COPY backend/app ./app
 COPY backend/alembic ./alembic
