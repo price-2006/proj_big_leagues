@@ -1,0 +1,18 @@
+# Phase 0: just enough to boot the API and talk to Postgres via async
+# SQLAlchemy + Alembic migrations. ML/NLP libraries (PyTorch, spaCy,
+# Sentence-Transformers, XGBoost/LightGBM, PyMuPDF, python-docx) are added
+# in the phases that actually use them (see docs/ROADMAP.md) rather than
+# installed speculatively here.
+#
+# Lower-bound constraints, not exact pins — run
+#   pip install -r requirements.txt && pip freeze > requirements.lock.txt
+# after the first install and commit the lockfile for reproducible builds.
+
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.9
+pydantic-settings>=2.5
+SQLAlchemy>=2.0.35
+asyncpg>=0.29
+alembic>=1.13
+python-dotenv>=1.0

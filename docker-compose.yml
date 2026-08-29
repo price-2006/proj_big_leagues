@@ -1,0 +1,46 @@
+version: "3.9"
+
+# Phase 0: postgres + backend only. The frontend service is added in Phase 9
+# once there's a real React app to build — an empty service here would just
+# be a Dockerfile with nothing to test.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: resume_matcher_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-resume_matcher}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-resume_matcher}
+      POSTGRES_DB: ${POSTGRES_DB:-resume_matcher}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-resume_matcher}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: resume_matcher_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-resume_matcher}:${POSTGRES_PASSWORD:-resume_matcher}@postgres:5432/${POSTGRES_DB:-resume_matcher}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+volumes:
+  postgres_data:
