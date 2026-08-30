@@ -43,6 +43,7 @@ _HEADER_ALIASES: dict[SectionType, set[str]] = {
         "core competencies",
         "technologies",
         "skills and tools",
+        "highlights",  # common on resumes built from certain ATS/builder templates
         "areas of expertise",
         "technical proficiencies",
     },

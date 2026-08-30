@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.config import get_settings
 from app.db import Base
 
-from app.models import job, match, resume, scoring_weights, skill, text_embedding  # noqa: F401
+from app.models import job, match, resume, scoring_weights, skill, text_embedding, training_label  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:
