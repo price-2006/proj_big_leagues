@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Phase 3
     spacy_model: str = "en_core_web_sm"
 
+    # Phase 8
+    upload_dir: str = "./data/uploads"
+
     # Phase 6
     embedding_model_provider: str = "sentence_transformers"
     embedding_model_name: str = "all-MiniLM-L6-v2"

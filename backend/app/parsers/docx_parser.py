@@ -4,17 +4,28 @@ DOCX has no page-position concept the way PDF does; its layout signal is
 structural instead — paragraph style name ("Heading 1", "Normal", ...) plus
 run-level bold/font-size, which is what the Phase 2 section detector reads
 in place of PDF's bbox/font-size heuristics.
-"""
-from io import BytesIO
 
-import docx
-from docx.text.paragraph import Paragraph
+python-docx (and the lxml it's built on) is imported lazily, inside
+parse_docx() itself, rather than at module level: it's a native-extension
+dependency that other, unrelated code paths (JD parsing, matching,
+skills browsing) shouldn't have to pay the import cost of, or fail to
+boot over, just because something imported this module.
+"""
+from __future__ import annotations
+
+from io import BytesIO
+from typing import TYPE_CHECKING
 
 from app.parsers.exceptions import DocumentParseError
 from app.schemas.document import ParsedDocument, TextLine
 
+if TYPE_CHECKING:
+    from docx.text.paragraph import Paragraph
+
 
 def parse_docx(data: bytes) -> ParsedDocument:
+    import docx
+
     try:
         document = docx.Document(BytesIO(data))
     except Exception as exc:

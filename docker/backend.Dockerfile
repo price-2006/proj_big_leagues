@@ -15,7 +15,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt .
-RUN pip install -r requirements.txt \
+# --timeout/--retries: this layer downloads torch (~a few hundred MB via
+# sentence-transformers' dependency chain), which has been observed
+# hitting pip's default read timeout on this network; more patience, not
+# a different mirror, is the fix.
+RUN pip install --timeout=180 --retries=8 -r requirements.txt \
     && python -m spacy download en_core_web_sm \
     && python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 

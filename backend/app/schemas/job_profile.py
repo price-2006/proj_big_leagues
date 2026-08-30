@@ -3,11 +3,12 @@
 JSONB column. Scoped to exactly what Feature Engineering (Phase 7, §8)
 needs: required/preferred skill coverage needs `requirements`;
 `responsibility_similarity` needs `responsibilities`; `seniority_match`
-needs `seniority`. JD content that isn't one of those (About/Benefits
-sections) isn't specially modeled here — it's still correctly segmented
-by the section detector so it doesn't corrupt the sections that are
-modeled, but the raw text remains available in `jobs.raw_text` for
-anything not captured in this structured shape.
+needs `seniority`; `domain_similarity` needs `about` (added in Phase 7 —
+the About/Company section was already correctly segmented by the section
+detector in Phase 4, just not surfaced here until a feature needed it).
+Benefits still isn't modeled — nothing uses it — but stays correctly
+segmented so it doesn't corrupt neighboring sections; the raw text
+remains available in `jobs.raw_text` for anything not captured here.
 """
 from enum import Enum
 
@@ -38,3 +39,4 @@ class JobProfile(BaseModel):
     seniority: SeniorityLevel = SeniorityLevel.UNSPECIFIED
     requirements: list[RequirementItem] = []
     responsibilities: list[str] = []
+    about: str | None = None

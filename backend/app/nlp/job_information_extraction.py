@@ -20,8 +20,9 @@ per docs/ARCHITECTURE.md §6's "section heading plus in-line cues".
 """
 import re
 
+from app.nlp.seniority import detect_seniority_from_title
 from app.nlp.skills_gazetteer import GAZETTEER
-from app.schemas.job_profile import JobProfile, RequirementItem, RequirementLevel, SeniorityLevel
+from app.schemas.job_profile import JobProfile, RequirementItem, RequirementLevel
 from app.schemas.job_section import JDSection, JDSectionType, SectionedJD
 
 _BULLET_PREFIX_RE = re.compile(r"^[-•*–—]\s*")
@@ -38,11 +39,6 @@ _PREFERRED_CUES = (
 )
 _REQUIRED_CUES = ("must have", "must", "required", "requires", "you must", "minimum qualifications")
 
-_STAFF_CUES = ("staff", "principal", "distinguished")
-_SENIOR_CUES = ("senior", "sr.")
-_JUNIOR_CUES = ("junior", "jr.", "entry level", "entry-level", "associate")
-_MID_CUES = ("mid-level", "mid level", "intermediate")
-
 _TITLE_HEADER_TYPES = {JDSectionType.UNLABELED, JDSectionType.OTHER}
 
 
@@ -52,9 +48,10 @@ def extract_job_profile(sectioned: SectionedJD) -> JobProfile:
 
     return JobProfile(
         title=title,
-        seniority=_detect_seniority(title),
+        seniority=detect_seniority_from_title(title),
         requirements=_extract_requirements(sections),
         responsibilities=_extract_responsibilities(sections),
+        about=_extract_about(sections),
     )
 
 
@@ -69,21 +66,6 @@ def _extract_title(sections: list[JDSection]) -> str | None:
     if first.lines:
         return first.lines[0].text
     return None
-
-
-def _detect_seniority(title: str | None) -> SeniorityLevel:
-    if not title:
-        return SeniorityLevel.UNSPECIFIED
-    lowered = title.lower()
-    if any(cue in lowered for cue in _STAFF_CUES):
-        return SeniorityLevel.STAFF
-    if any(cue in lowered for cue in _SENIOR_CUES):
-        return SeniorityLevel.SENIOR
-    if any(cue in lowered for cue in _JUNIOR_CUES):
-        return SeniorityLevel.JUNIOR
-    if any(cue in lowered for cue in _MID_CUES):
-        return SeniorityLevel.MID
-    return SeniorityLevel.UNSPECIFIED
 
 
 def _extract_requirements(sections: list[JDSection]) -> list[RequirementItem]:
@@ -119,6 +101,13 @@ def _classify_requirement_line(text: str, section_type: JDSectionType) -> Requir
 def _find_gazetteer_skills(text: str) -> list[str]:
     lowered = text.lower()
     return [skill for skill in GAZETTEER if re.search(rf"\b{re.escape(skill.lower())}\b", lowered)]
+
+
+def _extract_about(sections: list[JDSection]) -> str | None:
+    for s in sections:
+        if s.section_type == JDSectionType.ABOUT and s.lines:
+            return " ".join(line.text for line in s.lines)
+    return None
 
 
 def _extract_responsibilities(sections: list[JDSection]) -> list[str]:

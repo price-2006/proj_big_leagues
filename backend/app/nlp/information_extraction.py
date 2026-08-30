@@ -20,8 +20,6 @@ starting Phase 10, not guessed at here.
 import re
 from functools import lru_cache
 
-import spacy
-
 from app.config import get_settings
 from app.nlp.skills_gazetteer import GAZETTEER
 from app.schemas.candidate_profile import (
@@ -55,6 +53,8 @@ _CONTACT_HEADER_TYPES = {SectionType.UNLABELED, SectionType.OTHER}
 
 @lru_cache
 def _nlp():
+    import spacy
+
     return spacy.load(get_settings().spacy_model)
 
 

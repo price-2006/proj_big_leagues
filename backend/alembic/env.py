@@ -13,10 +13,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.config import get_settings
 from app.db import Base
 
-# Import model modules here as they're added so Base.metadata picks them
-# up for autogenerate. resumes/jobs/matches land in Phase 8, e.g.:
-#   from app.models import resume, job, match  # noqa: F401
-from app.models import skill, text_embedding  # noqa: F401
+from app.models import job, match, resume, scoring_weights, skill, text_embedding  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

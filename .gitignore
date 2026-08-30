@@ -21,6 +21,12 @@ data/processed/*
 models/*
 !models/.gitkeep
 
+# Uploaded resumes (Phase 8, app/config.py's upload_dir) — real user PII,
+# never committed regardless of which "data/" directory it lands under
+# depending on where the process was run from.
+data/uploads/
+backend/data/
+
 # IDE
 .vscode/
 .idea/

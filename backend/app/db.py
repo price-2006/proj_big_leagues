@@ -1,7 +1,7 @@
 """Async SQLAlchemy engine/session — the single place DB access is wired up.
 
-`Base` is imported by alembic/env.py for autogenerate support; it's empty
-until Phase 8 adds real models under app/models/.
+`Base` is imported by alembic/env.py for autogenerate support and by
+every model under app/models/.
 """
 from collections.abc import AsyncGenerator
 

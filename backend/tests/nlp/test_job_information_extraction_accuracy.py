@@ -103,3 +103,15 @@ def test_responsibilities_kept_separate_from_requirements(profiles) -> None:
 
     requirement_texts = " ".join(r.text for r in profile.requirements)
     assert "Build and maintain backend services" not in requirement_texts
+
+
+def test_about_section_extracted_for_domain_similarity(profiles) -> None:
+    """Added in Phase 7 for the domain_similarity feature — the About Us
+    section was already correctly segmented by Phase 4's detector, just
+    not surfaced into JobProfile until a feature needed it."""
+    about = profiles["junior_backend_engineer.txt"].about
+    assert about is not None
+    assert "fintech startup" in about
+
+    # Fixtures with no About section shouldn't fabricate one.
+    assert profiles["mixed_qualifications.txt"].about is None

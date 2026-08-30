@@ -31,3 +31,6 @@ pgvector>=0.3
 
 # Phase 6: embedding service
 sentence-transformers>=2.7
+
+# Phase 8: API wiring (multipart form/file upload parsing)
+python-multipart>=0.0.9
