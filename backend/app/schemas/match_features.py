@@ -30,3 +30,16 @@ class MatchResult(BaseModel):
     features: FeatureVector
     rule_based_score: float
     scoring_weights_version: str
+
+
+class SkillBreakdown(BaseModel):
+    """Named-skill counterpart to required_skill_coverage/preferred_skill_coverage
+    (Phase 9) — those are aggregate fractions in FeatureVector; the frontend's
+    matching/missing skill chips (docs/ARCHITECTURE.md §11) need the actual
+    canonical skill names, taxonomy-normalized the same way the coverage
+    numbers are, not a naive client-side string comparison."""
+
+    matched_required: list[str]
+    missing_required: list[str]
+    matched_preferred: list[str]
+    missing_preferred: list[str]

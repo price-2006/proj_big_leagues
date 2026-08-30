@@ -6,13 +6,16 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_taxonomy
 from app.db import get_session
 from app.models.match import Match
 from app.models.resume import Resume
 from app.parsers.exceptions import DocumentParseError
-from app.schemas.match_api import MatchResponse
+from app.schemas.match_api import MatchResponse, build_match_response
 from app.schemas.resume_api import ResumeResponse
+from app.services.match_pipeline import get_skill_breakdown_for_match
 from app.services.resume_pipeline import ingest_resume
+from app.services.skill_normalization_service import SkillTaxonomy
 
 router = APIRouter(prefix="/resumes", tags=["resumes"])
 
@@ -38,11 +41,16 @@ async def get_resume(resume_id: uuid.UUID, session: AsyncSession = Depends(get_s
 
 
 @router.get("/{resume_id}/matches", response_model=list[MatchResponse])
-async def list_resume_matches(resume_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> list[Match]:
+async def list_resume_matches(
+    resume_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    taxonomy: SkillTaxonomy = Depends(get_taxonomy),
+) -> list[MatchResponse]:
     resume = await session.get(Resume, resume_id)
     if resume is None:
         raise HTTPException(status_code=404, detail=f"Resume {resume_id} not found")
     result = await session.execute(
         select(Match).where(Match.resume_id == resume_id).order_by(Match.rule_based_score.desc())
     )
-    return list(result.scalars())
+    matches = list(result.scalars())
+    return [build_match_response(m, await get_skill_breakdown_for_match(session, m, taxonomy)) for m in matches]

@@ -20,7 +20,7 @@ from app.ml.date_utils import total_experience_years
 from app.nlp.seniority import detect_seniority_from_title
 from app.schemas.candidate_profile import CandidateProfile
 from app.schemas.job_profile import JobProfile, RequirementLevel, SeniorityLevel
-from app.schemas.match_features import FeatureVector
+from app.schemas.match_features import FeatureVector, SkillBreakdown
 from app.services.embedding_service import EmbeddingService, cosine_similarity
 from app.services.skill_normalization_service import SkillTaxonomy, normalize_skill
 
@@ -80,6 +80,22 @@ def compute_feature_vector(
         ),
         seniority_match=_seniority_match(candidate, job),
         skill_importance_weighted_score=_skill_importance_weighted_score(job, taxonomy, candidate_skills),
+    )
+
+
+def compute_skill_breakdown(candidate: CandidateProfile, job: JobProfile, taxonomy: SkillTaxonomy) -> SkillBreakdown:
+    """Named-skill counterpart to required_skill_coverage/preferred_skill_coverage
+    (Phase 9's MatchResults skill chips) — reuses the same taxonomy
+    normalization as the coverage features, not a separate approximation."""
+    candidate_skills = _canonicalize(candidate.skills, taxonomy)
+    required_skills = set(_jd_skill_weights(job, taxonomy, RequirementLevel.REQUIRED))
+    preferred_skills = set(_jd_skill_weights(job, taxonomy, RequirementLevel.PREFERRED))
+
+    return SkillBreakdown(
+        matched_required=sorted(required_skills & candidate_skills),
+        missing_required=sorted(required_skills - candidate_skills),
+        matched_preferred=sorted(preferred_skills & candidate_skills),
+        missing_preferred=sorted(preferred_skills - candidate_skills),
     )
 
 
