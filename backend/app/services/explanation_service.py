@@ -20,7 +20,7 @@ from app.schemas.candidate_profile import CandidateProfile
 from app.schemas.job_profile import JobProfile
 from app.schemas.match_explanation import MatchExplanation
 from app.schemas.match_features import SkillBreakdown
-from app.services.evidence_validator import validate_evidence
+from app.services.evidence_validator import resolve_evidence_ref, validate_evidence
 from app.services.llm_service import LLMService
 from app.services.skill_normalization_service import SkillTaxonomy
 from sqlalchemy import select
@@ -92,6 +92,18 @@ anything that breaks them:
 """
 
 
+def _with_evidence_text(claim_dict: dict, ref: str | None, candidate: CandidateProfile, job: JobProfile) -> dict:
+    """Phase 13's EvidencePopover ("click a claim -> see the exact
+    resume/JD span it's grounded in", ARCHITECTURE.md §11) needs the
+    resolved text, not just the ref string. Resolved once here, at
+    generation time, and stored alongside the claim — every validated
+    claim's ref already resolved successfully (validate_evidence
+    wouldn't have kept it otherwise), so this never re-derives anything
+    the frontend would have to trust on its own; it just carries the
+    already-checked result forward."""
+    return {**claim_dict, "evidence_text": resolve_evidence_ref(ref, candidate, job) if ref else None}
+
+
 async def get_or_generate_explanation(
     session: AsyncSession, match: Match, taxonomy: SkillTaxonomy, llm_service: LLMService
 ) -> tuple[MatchExplanationRow, bool]:
@@ -127,9 +139,11 @@ async def get_or_generate_explanation(
         matching_skills=sorted(set(skill_breakdown.matched_required) | set(skill_breakdown.matched_preferred)),
         missing_skills=sorted(skill_breakdown.missing_required),
         partial_skills=sorted(skill_breakdown.missing_preferred),
-        strengths=[c.model_dump() for c in result.explanation.strengths],
-        weaknesses=[c.model_dump() for c in result.explanation.weaknesses],
-        recommendations=[r.model_dump() for r in result.explanation.recommendations],
+        strengths=[_with_evidence_text(c.model_dump(), c.evidence_ref, candidate, job_profile) for c in result.explanation.strengths],
+        weaknesses=[_with_evidence_text(c.model_dump(), c.evidence_ref, candidate, job_profile) for c in result.explanation.weaknesses],
+        recommendations=[
+            _with_evidence_text(r.model_dump(), r.based_on, candidate, job_profile) for r in result.explanation.recommendations
+        ],
         narrative=result.explanation.narrative,
         llm_model=llm_service.model_name,
         evidence_check_passed=result.evidence_check_passed,

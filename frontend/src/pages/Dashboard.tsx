@@ -8,8 +8,9 @@ export function Dashboard() {
   // MVP scope: stats are computed for the most recently uploaded resume.
   // Aggregating across every tracked resume would need a batch of hook
   // calls (one per resume), which isn't a great fit for the common
-  // single-resume-many-jobs flow this phase targets — see docs/ROADMAP.md
-  // Phase 13's JobComparison for the real multi-resume ranking view.
+  // single-resume-many-jobs flow this phase targets — JobComparison.tsx
+  // (Phase 13) is the real multi-*job* ranking view for that one resume,
+  // linked below.
   const primaryResume = resumes[0]
   const matches = useResumeMatches(primaryResume?.id)
 
@@ -37,6 +38,14 @@ export function Dashboard() {
         <Stat label="Avg. match score" value={avgScore !== null ? `${Math.round(avgScore)}%` : '—'} />
         <Stat label="Top match" value={topMatch ? `${Math.round(topMatch.rule_based_score)}%` : '—'} />
       </div>
+
+      {primaryResume && matches.data && matches.data.length > 1 && (
+        <p className="mb-8 text-sm">
+          <Link to={`/jobs/compare?resumeId=${primaryResume.id}`} className="text-indigo-600 hover:underline">
+            Compare all {matches.data.length} jobs against this resume →
+          </Link>
+        </p>
+      )}
 
       {commonGaps.length > 0 && (
         <div className="mb-8 rounded-lg border border-slate-200 p-5">

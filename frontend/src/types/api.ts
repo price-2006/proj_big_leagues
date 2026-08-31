@@ -55,6 +55,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/resumes/{resume_id}/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Recommendations
+         * @description Phase 12. Requires an already-computed Match for (resume_id,
+         *     job_id) — POST /matches first — never scores on the fly here, so the
+         *     score is always already committed before any LLM call happens.
+         */
+        post: operations["get_recommendations_api_v1_resumes__resume_id__recommendations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/jobs": {
         parameters: {
             query?: never;
@@ -238,6 +260,17 @@ export interface components {
             /** Graduation Year */
             graduation_year?: string | null;
         };
+        /** EvidencedClaimResponse */
+        EvidencedClaimResponse: {
+            /** Text */
+            text: string;
+            /** Evidence Ref */
+            evidence_ref: string | null;
+            /** Is Inference */
+            is_inference: boolean;
+            /** Evidence Text */
+            evidence_text: string | null;
+        };
         /** ExperienceEntry */
         ExperienceEntry: {
             /** Title */
@@ -334,6 +367,42 @@ export interface components {
              */
             job_id: string;
         };
+        /** MatchExplanationResponse */
+        MatchExplanationResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Match Id
+             * Format: uuid
+             */
+            match_id: string;
+            /** Matching Skills */
+            matching_skills: string[];
+            /** Missing Skills */
+            missing_skills: string[];
+            /** Partial Skills */
+            partial_skills: string[];
+            /** Strengths */
+            strengths: components["schemas"]["EvidencedClaimResponse"][];
+            /** Weaknesses */
+            weaknesses: components["schemas"]["EvidencedClaimResponse"][];
+            /** Recommendations */
+            recommendations: components["schemas"]["RecommendationResponse"][];
+            /** Narrative */
+            narrative: string | null;
+            /** Llm Model */
+            llm_model: string | null;
+            /** Evidence Check Passed */
+            evidence_check_passed: boolean;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+        };
         /** MatchResponse */
         MatchResponse: {
             /**
@@ -374,6 +443,17 @@ export interface components {
              * @default []
              */
             bullets: string[];
+        };
+        /** RecommendationResponse */
+        RecommendationResponse: {
+            /** Suggestion */
+            suggestion: string;
+            /** Based On */
+            based_on: string;
+            /** Fabricated Metric */
+            fabricated_metric: boolean;
+            /** Evidence Text */
+            evidence_text: string | null;
         };
         /** RequirementItem */
         RequirementItem: {
@@ -554,6 +634,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MatchResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_recommendations_api_v1_resumes__resume_id__recommendations_post: {
+        parameters: {
+            query: {
+                job_id: string;
+            };
+            header?: never;
+            path: {
+                resume_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchExplanationResponse"];
                 };
             };
             /** @description Validation Error */

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { useCreateMatch } from '../api/hooks/useMatch'
 import { ScoreBreakdown } from '../components/ScoreBreakdown/ScoreBreakdown'
@@ -52,10 +52,20 @@ export function MatchResults() {
           <div className="rounded-lg border border-slate-200 p-5">
             <SkillBadgeList breakdown={createMatch.data.skill_breakdown} />
           </div>
-          <p className="text-xs text-slate-400">
-            Rule-based score only — no AI-generated explanation yet. That layer (evidence-grounded strengths,
-            weaknesses, and recommendations) lands in a later phase.
-          </p>
+          <div className="flex gap-4">
+            <Link
+              to={`/resume/optimize?resumeId=${resumeId}&jobId=${jobId}`}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-white font-medium hover:bg-indigo-700"
+            >
+              Get AI recommendations
+            </Link>
+            <Link
+              to={`/jobs/compare?resumeId=${resumeId}`}
+              className="rounded-md border border-slate-300 px-4 py-2 text-slate-700 font-medium hover:bg-slate-50"
+            >
+              Compare with other jobs
+            </Link>
+          </div>
         </div>
       )}
     </div>

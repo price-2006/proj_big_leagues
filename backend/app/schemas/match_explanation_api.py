@@ -4,7 +4,22 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.models.match_explanation import MatchExplanation as MatchExplanationRow
-from app.schemas.match_explanation import EvidencedClaim, Recommendation
+
+
+class EvidencedClaimResponse(BaseModel):
+    text: str
+    evidence_ref: str | None
+    is_inference: bool
+    evidence_text: str | None  # resolved at generation time — see explanation_service._with_evidence_text.
+    # Phase 13's EvidencePopover (ARCHITECTURE.md §11) reads this directly
+    # rather than re-resolving evidence_ref client-side.
+
+
+class RecommendationResponse(BaseModel):
+    suggestion: str
+    based_on: str
+    fabricated_metric: bool
+    evidence_text: str | None
 
 
 class MatchExplanationResponse(BaseModel):
@@ -13,9 +28,9 @@ class MatchExplanationResponse(BaseModel):
     matching_skills: list[str]
     missing_skills: list[str]
     partial_skills: list[str]
-    strengths: list[EvidencedClaim]
-    weaknesses: list[EvidencedClaim]
-    recommendations: list[Recommendation]
+    strengths: list[EvidencedClaimResponse]
+    weaknesses: list[EvidencedClaimResponse]
+    recommendations: list[RecommendationResponse]
     narrative: str | None
     llm_model: str | None
     evidence_check_passed: bool
@@ -29,9 +44,9 @@ def build_match_explanation_response(row: MatchExplanationRow) -> MatchExplanati
         matching_skills=row.matching_skills,
         missing_skills=row.missing_skills,
         partial_skills=row.partial_skills,
-        strengths=[EvidencedClaim.model_validate(c) for c in row.strengths],
-        weaknesses=[EvidencedClaim.model_validate(c) for c in row.weaknesses],
-        recommendations=[Recommendation.model_validate(r) for r in row.recommendations],
+        strengths=[EvidencedClaimResponse.model_validate(c) for c in row.strengths],
+        weaknesses=[EvidencedClaimResponse.model_validate(c) for c in row.weaknesses],
+        recommendations=[RecommendationResponse.model_validate(r) for r in row.recommendations],
         narrative=row.narrative,
         llm_model=row.llm_model,
         evidence_check_passed=row.evidence_check_passed,

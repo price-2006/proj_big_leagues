@@ -2,14 +2,11 @@ import { Link, Route, Routes } from 'react-router-dom'
 
 import { Dashboard } from './pages/Dashboard'
 import { JobAnalysis } from './pages/JobAnalysis'
+import { JobComparison } from './pages/JobComparison'
 import { MatchResults } from './pages/MatchResults'
+import { ResumeOptimization } from './pages/ResumeOptimization'
 import { ResumeUpload } from './pages/ResumeUpload'
 
-// JobComparison.tsx and ResumeOptimization.tsx are Phase 13
-// (docs/ROADMAP.md) — multi-job ranking needs a list-matches-by-resume
-// view this phase already supports, but "biggest opportunity" callouts
-// and targeted resume rewrite suggestions need Phase 12's LLM layer,
-// which isn't built yet.
 export function App() {
   return (
     <div className="min-h-screen bg-white">
@@ -27,6 +24,8 @@ export function App() {
         <Route path="/resume/upload" element={<ResumeUpload />} />
         <Route path="/jobs/new" element={<JobAnalysis />} />
         <Route path="/matches/new" element={<MatchResults />} />
+        <Route path="/jobs/compare" element={<JobComparison />} />
+        <Route path="/resume/optimize" element={<ResumeOptimization />} />
       </Routes>
     </div>
   )
