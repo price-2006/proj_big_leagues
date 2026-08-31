@@ -1,5 +1,6 @@
-"""POST /resumes, GET /resumes/{id}, GET /resumes/{resume_id}/matches
-(Phase 8, docs/ARCHITECTURE.md §10)."""
+"""POST /resumes, GET /resumes/{id}, GET /resumes/{resume_id}/matches,
+POST /resumes/{resume_id}/recommendations (Phases 8 and 12,
+docs/ARCHITECTURE.md §10)."""
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -12,8 +13,11 @@ from app.models.match import Match
 from app.models.resume import Resume
 from app.parsers.exceptions import DocumentParseError
 from app.schemas.match_api import MatchResponse, build_match_response
+from app.schemas.match_explanation_api import MatchExplanationResponse, build_match_explanation_response
 from app.schemas.resume_api import ResumeResponse
-from app.services.match_pipeline import get_skill_breakdown_for_match
+from app.services.explanation_service import get_or_generate_explanation
+from app.services.llm_service import LLMGenerationError, LLMService, get_llm_service
+from app.services.match_pipeline import find_match_by_resume_and_job, get_skill_breakdown_for_match
 from app.services.resume_pipeline import ingest_resume
 from app.services.skill_normalization_service import SkillTaxonomy
 
@@ -54,3 +58,28 @@ async def list_resume_matches(
     )
     matches = list(result.scalars())
     return [build_match_response(m, await get_skill_breakdown_for_match(session, m, taxonomy)) for m in matches]
+
+
+@router.post("/{resume_id}/recommendations", response_model=MatchExplanationResponse, status_code=201)
+async def get_recommendations(
+    resume_id: uuid.UUID,
+    job_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    taxonomy: SkillTaxonomy = Depends(get_taxonomy),
+    llm_service: LLMService = Depends(get_llm_service),
+) -> MatchExplanationResponse:
+    """Phase 12. Requires an already-computed Match for (resume_id,
+    job_id) — POST /matches first — never scores on the fly here, so the
+    score is always already committed before any LLM call happens."""
+    match = await find_match_by_resume_and_job(session, resume_id, job_id)
+    if match is None:
+        raise HTTPException(
+            status_code=404, detail=f"No match found for resume {resume_id} and job {job_id} — POST /matches first"
+        )
+    try:
+        row, _ = await get_or_generate_explanation(session, match, taxonomy, llm_service)
+    except LLMGenerationError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    await session.commit()
+    await session.refresh(row)
+    return build_match_explanation_response(row)

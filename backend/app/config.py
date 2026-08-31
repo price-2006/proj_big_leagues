@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     # Phase 12
     llm_provider: str = "anthropic"
     llm_api_key: str | None = None
+    llm_model: str | None = None  # per-provider default used if unset — see app/services/llm_service.py
+    ollama_base_url: str = "http://localhost:11434"
 
     # Phase 11: SQLite, not a plain "./mlruns" directory — MLflow 3.x puts
     # its filesystem store in maintenance mode and refuses to write to it

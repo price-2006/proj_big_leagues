@@ -1,10 +1,11 @@
 """SQLAlchemy model for matches (Phase 8, docs/ARCHITECTURE.md §5).
 
 Keyed on (resume_id, job_id, scoring_model_version) so re-scoring after a
-weights/model change doesn't destroy history. `match_explanations` isn't
-created yet — nothing writes to it until Phase 12's LLM layer exists;
-same reasoning as `training_labels`/`experiments` staying deferred to the
-phases that actually populate them (Phases 10/11).
+weights/model change doesn't destroy history. `match_explanations`
+(app/models/match_explanation.py, Phase 12) always references an
+existing row here via match_id — nothing in the explanation/LLM layer
+ever writes to this table, which is what guarantees the score can't be
+affected by LLM output.
 """
 import uuid
 from datetime import datetime

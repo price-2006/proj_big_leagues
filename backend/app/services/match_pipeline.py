@@ -102,6 +102,15 @@ async def _find_match(session: AsyncSession, resume_id: uuid.UUID, job_id: uuid.
     return result.scalar_one_or_none()
 
 
+async def find_match_by_resume_and_job(session: AsyncSession, resume_id: uuid.UUID, job_id: uuid.UUID) -> Match | None:
+    """Looks up the Match for the currently-active scoring_weights
+    version — Phase 12's explanation endpoint needs an already-scored
+    pair (never computes one on the fly), so a later-phase caller always
+    finds the same match compute_and_store_match would return today."""
+    version, _ = await load_active_weights(session)
+    return await _find_match(session, resume_id, job_id, version)
+
+
 async def get_skill_breakdown_for_match(session: AsyncSession, match: Match, taxonomy: SkillTaxonomy) -> SkillBreakdown:
     """Computed fresh from the match's resume/job rather than stored —
     cheap (taxonomy lookups only, no embeddings) and keeps it consistent

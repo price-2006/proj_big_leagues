@@ -1,10 +1,10 @@
 """FastAPI application entrypoint.
 
 Phase 8: wires the endpoints from docs/ARCHITECTURE.md §10 to Phases 1-7.
-`/matches` returns score + feature breakdown only — no explanation field,
-since that's Phase 12's LLM layer and isn't built yet. `/resumes/{id}/recommendations`
-isn't implemented for the same reason: it's explanation/recommendation
-territory, not scoring.
+`/matches` returns score + feature breakdown only — no explanation field;
+that's a separate, LLM-backed call. Phase 12 adds
+`POST /resumes/{id}/recommendations`, which requires an already-computed
+match and never touches its score.
 """
 from contextlib import asynccontextmanager
 

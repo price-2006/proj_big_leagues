@@ -19,7 +19,7 @@ from app.api.dependencies import get_taxonomy
 from app.config import get_settings
 from app.db import Base, get_session
 from app.main import app
-from app.models import job, match, resume, scoring_weights, skill, text_embedding  # noqa: F401 — completes Base.metadata
+from app.models import job, match, match_explanation, resume, scoring_weights, skill, text_embedding  # noqa: F401 — completes Base.metadata
 from app.services.skill_normalization_service import DisambiguationPair, SkillTaxonomy, TaxonomySkill
 from app.services.skill_seed_data import INTERNAL_DISAMBIGUATION_PAIRS, INTERNAL_SKILLS
 
