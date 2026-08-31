@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, Text, func
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,7 +21,16 @@ from app.db import Base
 
 class TrainingLabel(Base):
     __tablename__ = "training_labels"
-    __table_args__ = (CheckConstraint("dataset_split IN ('train', 'val', 'test')", name="ck_training_labels_split"),)
+    __table_args__ = (
+        CheckConstraint("dataset_split IN ('train', 'val', 'test')", name="ck_training_labels_split"),
+        # Scoped to external-ref rows (100% of what exists today) so
+        # build_dataset.py's upsert can actually dedupe on re-run — see
+        # alembic/versions/0008_training_labels_unique.py for the bug this
+        # fixed (ON CONFLICT DO NOTHING had nothing to conflict on before).
+        UniqueConstraint(
+            "external_resume_ref", "external_job_ref", "label_source", name="uq_training_labels_external_pair_source"
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     resume_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("resumes.id"), nullable=True)

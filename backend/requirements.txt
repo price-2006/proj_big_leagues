@@ -34,3 +34,12 @@ sentence-transformers>=2.7
 
 # Phase 8: API wiring (multipart form/file upload parsing)
 python-multipart>=0.0.9
+
+# Phase 11: ML ranking model + evaluate.py. scikit-learn is already a
+# transitive dep of sentence-transformers; pinned explicitly since Phase 11
+# imports it directly, not just through another library's internals.
+scikit-learn>=1.5
+pandas>=2.2
+xgboost>=2.1
+lightgbm>=4.5
+mlflow>=2.16

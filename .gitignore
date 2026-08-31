@@ -37,6 +37,7 @@ Thumbs.db
 
 # MLflow
 mlruns/
+mlflow.db
 
 # Alembic-generated __pycache__ inside versions
 backend/alembic/versions/__pycache__/

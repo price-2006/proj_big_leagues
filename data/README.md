@@ -126,6 +126,148 @@ The recommended fourth source, a small hand-annotated gold set
 headline evaluation numbers will need it before they can be reported
 honestly, per that section.
 
+## Model training and evaluation (Phase 11)
+
+```bash
+docker exec resume_matcher_backend python -m scripts.train_model
+docker exec resume_matcher_backend python -m evaluation.evaluate --split test   # or --split val
+```
+
+Both live under `backend/` (`scripts/train_model.py`, `evaluation/evaluate.py`)
+rather than the repo-root `scripts/`/`evaluation/` the roadmap names
+literally — same bind-mount reasoning as `build_dataset.py`: they need
+`sentence-transformers`, only installed in the backend image, and that
+image only bind-mounts `./backend`. `train_model.py` builds a feature
+matrix (10 features + the embedding-cosine baseline, per pair) from
+`training_labels` + the parsed profiles, caches it to
+`backend/data/processed/feature_matrix.csv` so `evaluate.py` doesn't
+recompute it, and trains five models to `backend/data/models/`:
+Logistic Regression (baseline), Random Forest, XGBoost, LightGBM (all
+four regressing on the continuous label), and a LightGBM LTR ranker
+(`lambdarank` objective, grouped by resume — directly optimizing "rank
+these jobs for this candidate," the real product task). `evaluate.py`
+scores the held-out split with the rule-based scorer, a "plain"
+whole-document embedding-cosine-similarity baseline, and all five
+trained models; logs every run to MLflow (SQLite backend — see below)
+and mirrors it into the `experiments` table.
+
+### Two real bugs found by actually running this, both fixed and reverified
+
+1. **`data/processed/*.json` was being written outside the Docker bind
+   mount.** `build_dataset.py`'s `PROCESSED_DIR` resolved three parents
+   up from `__file__`, landing at the container filesystem root's own
+   `/data/processed` — invisible on the host and gone on any container
+   recreation, which is exactly what happened between Phase 10 and
+   Phase 11 (rebuilding the image for Phase 11's new dependencies wiped
+   it). Fixed to resolve to `backend/data/processed/`, which the
+   `./backend:/app` mount actually exposes; re-ran `build_dataset.py` to
+   regenerate the profiles there.
+2. **`training_labels` had no unique constraint**, so `_upsert_label`'s
+   `ON CONFLICT DO NOTHING` had nothing to conflict on (`id` is a fresh
+   `uuid4()` every insert) — every re-run of `build_dataset.py` silently
+   doubled the table (confirmed live: 10,081 -> 20,162 rows after one
+   extra run). A second, related bug compounded it: `candidate_pairs`
+   for the rule-based label sample was built via `list({...})` over a
+   Python `set`, whose iteration order depends on per-process hash
+   randomization, not just `--seed` — so `--seed 42` produced a
+   *different* rule-based sample on every process invocation, silently
+   breaking the reproducibility `ROADMAP.md`'s Phase 10 "Test" line
+   requires. Fixed both: added a real unique constraint on
+   `(external_resume_ref, external_job_ref, label_source)`
+   (`alembic/versions/0008_training_labels_unique.py`, which also
+   de-duplicates the corrupted rows already on disk), pointed
+   `on_conflict_do_nothing` at it explicitly, and changed `list({...})`
+   to `sorted({...})` before shuffling. Reverified by actually re-running
+   `build_dataset.py` twice with the same seed: identical split sizes
+   both times (`{'train': 7062, 'val': 1532, 'test': 1487}`) and the
+   second run inserted 0 new rows — true reproducibility and idempotency,
+   not asserted, checked.
+3. **Smaller:** MLflow 3.x's plain filesystem tracking store (`./mlruns`)
+   is in maintenance mode and refuses new writes. `ARCHITECTURE.md` §4/§14
+   sanctions "local file/SQLite backend to start" either way, so
+   `mlflow_tracking_uri` now defaults to `sqlite:///mlflow.db` (also
+   MLflow's own currently-recommended local option) instead.
+
+### Real numbers from the test split (1,484 rows: 1,133 `dataset:cnamuangtoun` /
+### 284 `weak_supervision_occupation` / 67 `weak_supervision_rule_based`)
+
+Precision/Recall/F1/ROC-AUC use `label >= 0.5` as ground truth; NDCG@5/MRR
+are grouped by resume (ranking "jobs for this candidate") and averaged
+over groups with 2+ items. No `human_annotated` gold set exists yet
+(`DATASET_STRATEGY.md` §3: "recommended, not yet collected" — "the one
+label source trusted enough to appear in the headline `evaluate.py`
+output"), so none of the numbers below is asserted as *the* headline
+number — they're reported per source, honestly, as that section requires.
+
+**`dataset:cnamuangtoun` (n=1133):**
+
+| approach | precision | recall | f1 | roc_auc | ndcg@5 | mrr |
+|---|---|---|---|---|---|---|
+| rule_based | 0.000 | 0.000 | 0.000 | 0.491 | 0.447 | 0.261 |
+| embedding_cosine | 0.705 | 0.161 | 0.263 | 0.618 | 0.491 | 0.583 |
+| logistic_regression | 0.484 | 0.102 | 0.169 | 0.488 | 0.446 | 0.465 |
+| random_forest | 0.615 | 0.014 | 0.027 | 0.511 | 0.479 | 0.451 |
+| xgboost | 0.767 | 0.040 | 0.076 | 0.508 | 0.471 | 0.450 |
+| lightgbm | 0.722 | 0.023 | 0.044 | 0.511 | 0.479 | 0.455 |
+| lightgbm_ranker | 0.571 | 0.069 | 0.124 | 0.511 | 0.474 | 0.422 |
+
+**`weak_supervision_occupation` (n=284):**
+
+| approach | precision | recall | f1 | roc_auc | ndcg@5 | mrr |
+|---|---|---|---|---|---|---|
+| rule_based | 0.000 | 0.000 | 0.000 | 0.503 | 0.865 | 0.932 |
+| embedding_cosine | 0.795 | 0.228 | 0.354 | 0.672 | 0.915 | 0.793 |
+| logistic_regression | 0.625 | 0.110 | 0.188 | 0.544 | 0.875 | 0.905 |
+| random_forest | 0.000 | 0.000 | 0.000 | 0.540 | 0.876 | 0.926 |
+| xgboost | 0.000 | 0.000 | 0.000 | 0.529 | 0.870 | 0.905 |
+| lightgbm | 0.000 | 0.000 | 0.000 | 0.541 | 0.876 | 0.926 |
+| lightgbm_ranker | 0.480 | 0.978 | 0.644 | 0.516 | 0.869 | 0.926 |
+
+**`weak_supervision_rule_based` (n=67):** every approach reports
+precision/recall/f1 = 0.000, roc_auc = None, ndcg@5 = 1.000, mrr = 0.000
+— identically, across the board. Reported as-is rather than dropped:
+this is a small-sample artifact (67 rows, further split into per-resume
+ranking groups), not a real signal — this slice of the test split
+happened to land only on the low tier of `rule_based_tier_label`'s
+three-way split, so `label >= 0.5` is `False` for every row here
+(`roc_auc` correctly reports `None` — only one class present to score
+against), and no group has a "relevant" item for MRR to find. Read this
+row as "not enough data in this slice to say anything," not as "every
+model fails identically here."
+
+### Honest reading of the above — nothing here is smoothed over
+
+- **The rule-based scorer's raw scores almost never cross the 0.5
+  classification threshold** (precision/recall/f1 pinned at 0.000 on
+  every source) despite genuinely reasonable ranking quality on the
+  first two sources (NDCG@5 0.447/0.865, MRR 0.261/0.932) — its weighted
+  formula (`DEFAULT_WEIGHTS`, `app/ml/rule_based_scorer.py`) rarely
+  produces a raw output above ~0.5 even for comparatively strong matches,
+  a calibration property of the hand-designed v1 formula, not a Phase 11
+  bug. It still *ranks* reasonably; it just isn't well-calibrated as a
+  0/1 classifier at this specific threshold.
+- **The "plain" embedding-cosine baseline is competitive with, or ahead
+  of, every trained model** on precision/recall/f1/ROC-AUC for both
+  `dataset:cnamuangtoun` and `weak_supervision_occupation`. This is
+  reported plainly rather than reframed: on this data, at this scope
+  (~7k train rows, 10 features, no hyperparameter search beyond the
+  documented fixed configs in `train_model.py`), the trained models
+  haven't yet clearly beaten the simplest possible whole-document
+  similarity score. A larger/cleaner training set and real
+  hyperparameter tuning are the obvious next levers, not claimed here as
+  already pulled.
+- **`lightgbm_ranker` (the LTR model) stands out on
+  `weak_supervision_occupation` recall/F1** (0.978 / 0.644, well above
+  every other model) — consistent with it directly optimizing a ranking
+  loss instead of a pointwise regression target, though its precision
+  (0.480) shows that comes with predicting "relevant" much more often
+  overall on this source.
+- None of these numbers should be read as "the model works" or "the
+  model doesn't work" in an absolute sense — per `DATASET_STRATEGY.md`
+  §3, every source above is weak/auxiliary supervision, not ground
+  truth. A trustworthy headline number needs the `human_annotated` gold
+  set this section (and Phase 10's) still flags as not yet collected.
+
 ## Skill taxonomy sources (Phase 5)
 
 Seeded by `backend/scripts/seed_skills.py` directly into Postgres — not staged as files under `raw/`, since each source is small enough to fetch and load in one step rather than needing a separate download/preprocess split.

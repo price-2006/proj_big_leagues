@@ -5,7 +5,15 @@ literally — same reasoning as seed_skills.py/embed_skills.py (Phase 5):
 it needs spaCy (via app.nlp.information_extraction, for resume
 extraction) which only reliably works inside the backend Docker
 container on this machine, and that container only bind-mounts
-./backend, not the repo root (docker-compose.yml).
+./backend, not the repo root (docker-compose.yml). For the same mount
+reason, PROCESSED_DIR below writes under backend/data/processed/, not
+the repo-root data/processed/ that data/README.md's directory layout
+implies — anything outside ./backend is invisible to (and unwritable
+by) this container. (Found and fixed a real bug here: this originally
+resolved three parents up from __file__, landing at the container
+filesystem root's own untracked /data/processed, not backend/data/processed
+— silently "worked" only because the same long-lived container was still
+running, and would've been a FileNotFoundError on any fresh container.)
 
 Pipeline:
   1. Fetch cnamuangtoun/resume-job-description-fit (both files, combined
@@ -69,7 +77,7 @@ from app.services.onet_occupations import embed_occupations, fetch_onet_occupati
 from app.services.scoring_weights_store import load_active_weights
 from app.services.taxonomy_loader import load_taxonomy_from_db
 
-PROCESSED_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "processed"
+PROCESSED_DIR = Path(__file__).resolve().parent.parent / "data" / "processed"
 POSITIVE_PAIRS_PER_RESUME = 2
 NEGATIVE_PAIRS_PER_RESUME = 2
 
@@ -141,7 +149,7 @@ async def _upsert_label(session, row: DatasetRow, split: str) -> int:
             label_source=row.label_source,
             dataset_split=split,
         )
-        .on_conflict_do_nothing()
+        .on_conflict_do_nothing(index_elements=["external_resume_ref", "external_job_ref", "label_source"])
         .returning(TrainingLabel.id)
     )
     result = await session.execute(stmt)
@@ -231,7 +239,14 @@ async def main(max_resumes: int | None, max_jobs: int | None, max_rule_based_pai
         taxonomy = await load_taxonomy_from_db(session)
         _, weights = await load_active_weights(session)
 
-    candidate_pairs = list({(r.resume_ref, r.job_ref) for r in dataset_rows + occupation_rows})
+    # sorted(), not list(): a plain list({...}) here made --seed non-
+    # reproducible — set iteration order depends on Python's per-process
+    # hash randomization (PYTHONHASHSEED), not just the seed, so
+    # rng.shuffle() started from a different order on every run and
+    # sampled a different 500 pairs each time. Found by actually
+    # re-running this script twice with the same --seed and diffing the
+    # results, not by inspection.
+    candidate_pairs = sorted({(r.resume_ref, r.job_ref) for r in dataset_rows + occupation_rows})
     rng.shuffle(candidate_pairs)
     sampled_pairs = candidate_pairs[:max_rule_based_pairs]
 

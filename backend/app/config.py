@@ -33,6 +33,16 @@ class Settings(BaseSettings):
     llm_provider: str = "anthropic"
     llm_api_key: str | None = None
 
+    # Phase 11: SQLite, not a plain "./mlruns" directory — MLflow 3.x puts
+    # its filesystem store in maintenance mode and refuses to write to it
+    # (found by actually running evaluate.py, not by reading changelogs);
+    # docs/ARCHITECTURE.md §4/§14 sanctions "local file/SQLite backend to
+    # start" either way, so SQLite is the one that still works. Relative
+    # to the backend container's cwd, same convention as upload_dir above.
+    # No dedicated MLflow server/UI container is stood up for this.
+    mlflow_tracking_uri: str = "sqlite:///mlflow.db"
+    mlflow_experiment_name: str = "resume_job_matching"
+
 
 @lru_cache
 def get_settings() -> Settings:
