@@ -13,7 +13,7 @@ from app.config import get_settings
 from app.models.resume import Resume
 from app.nlp.information_extraction import extract_candidate_profile
 from app.nlp.section_detector import detect_sections
-from app.parsers.dispatch import detect_file_type, parse_uploaded_document
+from app.parsers.dispatch import detect_file_type, parse_uploaded_document_with_timeout
 
 PARSER_VERSION = "resume-parser@0.1.0"
 
@@ -22,7 +22,7 @@ async def ingest_resume(
     session: AsyncSession, filename: str, data: bytes, owner_id: uuid.UUID | None = None
 ) -> Resume:
     file_type = detect_file_type(filename)
-    parsed = parse_uploaded_document(filename, data)
+    parsed = await parse_uploaded_document_with_timeout(filename, data)
     sectioned = detect_sections(parsed)
     profile = extract_candidate_profile(sectioned)
 

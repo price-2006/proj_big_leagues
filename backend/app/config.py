@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     mlflow_tracking_uri: str = "sqlite:///mlflow.db"
     mlflow_experiment_name: str = "resume_job_matching"
 
+    # Phase 14: rate limiting (slowapi, Redis-backed — docs/ARCHITECTURE.md
+    # §12). "redis://localhost:6379/0" is the local-dev-outside-Docker
+    # default; docker-compose.yml overrides it to the "redis" service host.
+    redis_url: str = "redis://localhost:6379/0"
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -6,18 +6,26 @@ that's a separate, LLM-backed call. Phase 12 adds
 `POST /resumes/{id}/recommendations`, which requires an already-computed
 match and never touches its score.
 """
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import jobs, matches, resumes, skills
 from app.config import get_settings
 from app.db import SessionLocal, engine
+from app.logging_config import configure_logging
+from app.rate_limiter import limiter
 from app.services.taxonomy_loader import load_taxonomy_from_db
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -34,10 +42,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+
 app.include_router(resumes.router, prefix="/api/v1")
 app.include_router(jobs.router, prefix="/api/v1")
 app.include_router(matches.router, prefix="/api/v1")
 app.include_router(skills.router, prefix="/api/v1")
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    logger.warning("rate limit exceeded: path=%s", request.url.path)
+    return JSONResponse(status_code=429, content={"error": {"code": "429", "message": f"Rate limit exceeded: {exc.detail}"}})
 
 
 @app.exception_handler(StarletteHTTPException)

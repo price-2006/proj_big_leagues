@@ -20,6 +20,7 @@ from app.config import get_settings
 from app.db import Base, get_session
 from app.main import app
 from app.models import job, match, match_explanation, resume, scoring_weights, skill, text_embedding  # noqa: F401 — completes Base.metadata
+from app.rate_limiter import limiter
 from app.services.skill_normalization_service import DisambiguationPair, SkillTaxonomy, TaxonomySkill
 from app.services.skill_seed_data import INTERNAL_DISAMBIGUATION_PAIRS, INTERNAL_SKILLS
 
@@ -86,6 +87,14 @@ async def client(test_engine, db_session):
 
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_taxonomy] = _in_memory_taxonomy
+    # Rate limiting (Phase 14) is Redis-backed and shared across the whole
+    # test run — dozens of tests across many files call POST /resumes,
+    # /jobs, /matches in quick succession, which would blow through the
+    # real per-minute limits and fail tests that have nothing to do with
+    # rate limiting. Disabled here for every test using this fixture;
+    # tests/api/test_rate_limiting.py re-enables it deliberately, against
+    # its own isolated endpoint, to verify the 429 behavior for real.
+    limiter.enabled = False
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:

@@ -5,12 +5,13 @@ isn't built yet, so this deliberately doesn't fake one.
 """
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_taxonomy
 from app.db import get_session
 from app.models.match import Match
+from app.rate_limiter import limiter
 from app.schemas.match_api import MatchCreateRequest, MatchResponse, build_match_response
 from app.services.embedding_service import EmbeddingService, get_embedding_service
 from app.services.match_pipeline import (
@@ -25,7 +26,9 @@ router = APIRouter(prefix="/matches", tags=["matches"])
 
 
 @router.post("", response_model=MatchResponse, status_code=201)
+@limiter.limit("20/minute")
 async def create_match(
+    request: Request,
     body: MatchCreateRequest,
     session: AsyncSession = Depends(get_session),
     taxonomy: SkillTaxonomy = Depends(get_taxonomy),

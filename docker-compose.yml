@@ -1,10 +1,20 @@
 version: "3.9"
 
-# Phase 0: postgres + backend only. The frontend service is added in Phase 9
-# once there's a real React app to build — an empty service here would just
-# be a Dockerfile with nothing to test.
+# Phase 0: postgres + backend only, joined by redis in Phase 14 (rate
+# limiting, docs/ARCHITECTURE.md §12). The frontend runs via `npm run dev`
+# on the host (Phase 9) rather than as a service here.
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: resume_matcher_redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   postgres:
     image: pgvector/pgvector:pg16
     container_name: resume_matcher_postgres
@@ -34,10 +44,13 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-resume_matcher}:${POSTGRES_PASSWORD:-resume_matcher}@postgres:5432/${POSTGRES_DB:-resume_matcher}
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./backend:/app

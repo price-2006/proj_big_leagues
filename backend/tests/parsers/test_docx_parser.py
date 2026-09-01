@@ -6,6 +6,7 @@ from app.parsers.docx_parser import parse_docx
 from app.parsers.exceptions import DocumentParseError
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "resumes"
+SECURITY_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "security"
 
 
 def test_resume_docx_extracts_known_strings() -> None:
@@ -36,3 +37,13 @@ def test_corrupt_docx_raises_clean_error_not_a_crash() -> None:
 def test_empty_bytes_raises_clean_error() -> None:
     with pytest.raises(DocumentParseError):
         parse_docx(b"")
+
+
+def test_xxe_payload_docx_is_rejected_before_reaching_python_docx() -> None:
+    """Phase 14 test procedure per docs/ROADMAP.md: "XXE payload DOCX
+    doesn't leak file contents." A DOCTYPE-declaring XML part is rejected
+    outright by the defusedxml pre-scan — python-docx (no XXE hardening
+    of its own) never touches these bytes at all, so there's no code
+    path here that could resolve the entity and leak anything."""
+    with pytest.raises(DocumentParseError):
+        parse_docx((SECURITY_FIXTURES / "xxe_payload.docx").read_bytes())

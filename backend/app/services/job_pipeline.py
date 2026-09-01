@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.job import Job
 from app.nlp.jd_section_detector import detect_jd_sections
 from app.nlp.job_information_extraction import extract_job_profile
-from app.parsers.dispatch import parse_uploaded_document
+from app.parsers.dispatch import parse_uploaded_document_with_timeout
 from app.parsers.text_parser import parse_text
 from app.schemas.document import ParsedDocument
 
@@ -35,7 +35,8 @@ async def ingest_job_from_file(
     company: str | None = None,
     owner_id: uuid.UUID | None = None,
 ) -> Job:
-    return await _store_job(session, parse_uploaded_document(filename, data), "uploaded", title, company, owner_id)
+    parsed = await parse_uploaded_document_with_timeout(filename, data)
+    return await _store_job(session, parsed, "uploaded", title, company, owner_id)
 
 
 async def _store_job(
