@@ -1,8 +1,11 @@
 version: "3.9"
 
 # Phase 0: postgres + backend only, joined by redis in Phase 14 (rate
-# limiting, docs/ARCHITECTURE.md §12). The frontend runs via `npm run dev`
-# on the host (Phase 9) rather than as a service here.
+# limiting, docs/ARCHITECTURE.md §12) and frontend in Phase 15 (a
+# production build served via nginx, per ARCHITECTURE.md §14's deployment
+# shape) — `docker compose up` now brings up the whole system with no
+# other manual steps. `npm run dev` on the host is still the faster loop
+# while actively developing the frontend.
 
 services:
   redis:
@@ -54,6 +57,18 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    container_name: resume_matcher_frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data:

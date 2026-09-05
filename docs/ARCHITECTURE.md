@@ -374,12 +374,14 @@ Generating frontend types from the backend's OpenAPI schema (rather than hand-wr
 ## 14. Deployment view
 
 ```yaml
-# docker-compose.yml (shape, not final)
+# docker-compose.yml (final — Phase 15)
 services:
-  postgres:      # postgres:16 + pgvector extension
-  backend:       # FastAPI app, depends_on postgres
-  frontend:      # React build served via nginx or Vite preview
-  mlflow:        # optional, local experiment UI
+  postgres:      # pgvector/pgvector:pg16
+  redis:         # rate limiting (§12)
+  backend:       # FastAPI app; entrypoint applies migrations + seeds the
+                 # skill taxonomy before serving, so "docker compose up"
+                 # needs no manual setup step beyond .env
+  frontend:      # React build served via nginx, proxying /api to backend
 ```
 
-Each service builds independently; the backend's Dockerfile separates the "ML/NLP model weights" layer from the "application code" layer so code changes don't force re-downloading Sentence-Transformer weights on every rebuild.
+Each service builds independently; the backend's Dockerfile separates the "ML/NLP model weights" layer (spaCy + Sentence-Transformers, downloaded once at build time) from the "application code" layer (bind-mounted in dev) so code changes don't force re-downloading model weights on every rebuild. MLflow isn't a separate service — Phase 11 uses a local SQLite file (`backend/mlflow.db`) as its tracking backend, which doesn't need one.

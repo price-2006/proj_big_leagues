@@ -47,7 +47,7 @@ class FitRow:
 
 
 def fetch_csv(url: str, timeout: int = 60) -> str:
-    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 — fixed, trusted huggingface.co URL
+    with urllib.request.urlopen(url, timeout=timeout) as response:
         return response.read().decode("utf-8")
 
 

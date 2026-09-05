@@ -9,7 +9,6 @@ uses (app/services/skill_seed_data.py), so tests don't depend on the
 skills table being seeded in the test DB.
 """
 import asyncpg
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -19,7 +18,15 @@ from app.api.dependencies import get_taxonomy
 from app.config import get_settings
 from app.db import Base, get_session
 from app.main import app
-from app.models import job, match, match_explanation, resume, scoring_weights, skill, text_embedding  # noqa: F401 — completes Base.metadata
+from app.models import (  # noqa: F401 — completes Base.metadata
+    job,
+    match,
+    match_explanation,
+    resume,
+    scoring_weights,
+    skill,
+    text_embedding,
+)
 from app.rate_limiter import limiter
 from app.services.skill_normalization_service import DisambiguationPair, SkillTaxonomy, TaxonomySkill
 from app.services.skill_seed_data import INTERNAL_DISAMBIGUATION_PAIRS, INTERNAL_SKILLS

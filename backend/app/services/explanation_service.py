@@ -11,6 +11,9 @@ what makes docs/ROADMAP.md's Phase 12 "Test" requirement ("the score is
 provably unaffected by LLM output") true by construction, not by
 convention.
 """
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.ml.feature_engineering import compute_skill_breakdown
 from app.models.job import Job
 from app.models.match import Match
@@ -23,8 +26,6 @@ from app.schemas.match_features import SkillBreakdown
 from app.services.evidence_validator import resolve_evidence_ref, validate_evidence
 from app.services.llm_service import LLMService
 from app.services.skill_normalization_service import SkillTaxonomy
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def _format_evidence_payload(candidate: CandidateProfile, job: JobProfile) -> str:

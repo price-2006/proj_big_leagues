@@ -48,7 +48,7 @@ async def parse_uploaded_document_with_timeout(
 ) -> ParsedDocument:
     try:
         return await asyncio.wait_for(run_in_threadpool(parse_uploaded_document, filename, data), timeout=timeout_seconds)
-    except asyncio.TimeoutError as exc:
+    except TimeoutError as exc:
         raise DocumentParseError(
             f"Parsing exceeded the {timeout_seconds:.0f}s time limit — the file may be malformed or adversarial"
         ) from exc

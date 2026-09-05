@@ -48,6 +48,7 @@ import random
 import time
 from decimal import Decimal
 from pathlib import Path
+
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.db import SessionLocal

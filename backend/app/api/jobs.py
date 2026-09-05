@@ -16,7 +16,12 @@ from app.parsers.exceptions import DocumentParseError
 from app.rate_limiter import limiter
 from app.schemas.job_api import JobResponse
 from app.services.job_pipeline import ingest_job_from_file, ingest_job_from_text
-from app.services.upload_validation import UnrecognizedFileSignatureError, UploadTooLargeError, read_upload_within_limit, verify_magic_bytes
+from app.services.upload_validation import (
+    UnrecognizedFileSignatureError,
+    UploadTooLargeError,
+    read_upload_within_limit,
+    verify_magic_bytes,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/jobs", tags=["jobs"])

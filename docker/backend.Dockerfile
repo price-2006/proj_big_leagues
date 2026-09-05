@@ -26,10 +26,17 @@ RUN pip install --timeout=180 --retries=8 -r requirements.txt \
 COPY backend/app ./app
 COPY backend/alembic ./alembic
 COPY backend/alembic.ini .
+COPY backend/scripts ./scripts
+
+COPY docker/backend-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=10s --timeout=3s --start-period=10s \
+# Longer start-period than Phase 0's: the entrypoint now runs migrations
+# plus skill-taxonomy seeding (one of which fetches from O*NET over the
+# network) before uvicorn ever starts listening.
+HEALTHCHECK --interval=10s --timeout=3s --start-period=60s \
     CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["/entrypoint.sh"]

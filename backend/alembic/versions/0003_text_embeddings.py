@@ -9,9 +9,10 @@ responsibility lines (Phase 6, docs/ARCHITECTURE.md §5). `entity_id` has
 no FK — polymorphic (resumes/jobs tables land in Phase 8).
 """
 import sqlalchemy as sa
-from alembic import op
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0003"
 down_revision = "0002"

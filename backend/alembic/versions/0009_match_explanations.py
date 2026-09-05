@@ -9,8 +9,9 @@ one row per match; regenerating an explanation overwrites it rather than
 accumulating history (see app/models/match_explanation.py).
 """
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0009"
 down_revision = "0008"

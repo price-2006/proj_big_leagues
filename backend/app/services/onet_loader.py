@@ -44,7 +44,7 @@ _RENAME = {
 
 
 def fetch_onet_software_skills_csv(url: str = ONET_SOFTWARE_SKILLS_URL, timeout: int = 30) -> str:
-    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 — fixed, trusted onetcenter.org URL
+    with urllib.request.urlopen(url, timeout=timeout) as response:
         return response.read().decode("utf-8")
 
 

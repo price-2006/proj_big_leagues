@@ -24,7 +24,12 @@ from app.services.match_pipeline import find_match_by_resume_and_job, get_skill_
 from app.services.resume_deletion import delete_resume
 from app.services.resume_pipeline import ingest_resume
 from app.services.skill_normalization_service import SkillTaxonomy
-from app.services.upload_validation import UnrecognizedFileSignatureError, UploadTooLargeError, read_upload_within_limit, verify_magic_bytes
+from app.services.upload_validation import (
+    UnrecognizedFileSignatureError,
+    UploadTooLargeError,
+    read_upload_within_limit,
+    verify_magic_bytes,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/resumes", tags=["resumes"])

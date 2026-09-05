@@ -1,0 +1,33 @@
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.lint]
+# A curated subset, not ruff's full default set — chosen by actually
+# running the full ruleset once (Phase 15) and triaging what it found:
+#   - "B" (bugbear) is excluded: its dominant finding here was B008 on
+#     every `Depends(...)`/`File(...)`/`Form(...)` default-argument in
+#     the API layer, which is FastAPI's own correct dependency-injection
+#     idiom, not the general Python anti-pattern the rule targets.
+#   - "EXE" is excluded: EXE002 fired 83 times on files that don't have
+#     (and don't need) a shebang, a checked-out-on-Windows executable-bit
+#     artifact, not a real code issue.
+#   - "DTZ"/"BLE" are excluded: both real findings were deliberate,
+#     already-documented choices (a calendar-date comparison that
+#     doesn't need timezone awareness; an intentionally broad `except
+#     Exception` in a parser that converts anything unexpected into a
+#     clean DocumentParseError) rather than bugs to fix.
+#   - RUF001/002/003 (ambiguous-unicode) are excluded: they fire on this
+#     codebase's own established docstring style (em dashes, "§" section
+#     references into docs/ARCHITECTURE.md) throughout every phase, not
+#     on anything actually ambiguous or unsafe.
+#   - UP042 (replace str+Enum with StrEnum) is excluded: every
+#     RequirementLevel/SeniorityLevel/SectionType-style enum in this
+#     codebase deliberately inherits `(str, Enum)` so Pydantic serializes
+#     it as a plain string; `enum.StrEnum` behaves close to identically
+#     but not exactly (f-string/`str()` formatting differs in a few
+#     edge cases), and this late in the project a mechanical base-class
+#     swap across every schema enum isn't worth that behavioral risk for
+#     a purely cosmetic modernization.
+select = ["F", "I", "UP", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003", "UP042"]

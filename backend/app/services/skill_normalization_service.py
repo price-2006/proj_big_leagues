@@ -33,9 +33,9 @@ that DB data is what a future SkillTaxonomy.from_db() (Phase 8) will load
 back into this same shape.
 """
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
-from typing import Callable
 
 from app.schemas.skill_normalization import MatchStage, NormalizationResult, SkillSuggestion
 

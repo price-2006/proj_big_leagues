@@ -47,7 +47,7 @@ class Occupation:
 
 
 def fetch_onet_occupation_data_csv(url: str = ONET_OCCUPATION_DATA_URL, timeout: int = 30) -> str:
-    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 — fixed, trusted onetcenter.org URL
+    with urllib.request.urlopen(url, timeout=timeout) as response:
         return response.read().decode("utf-8")
 
 

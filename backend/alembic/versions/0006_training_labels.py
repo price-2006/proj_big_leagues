@@ -10,8 +10,9 @@ from an external dataset never inserted into resumes/jobs (see
 app/models/training_label.py).
 """
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0006"
 down_revision = "0005"

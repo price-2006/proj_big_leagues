@@ -1,0 +1,14 @@
+.git/
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+frontend/dist/
+backend/data/
+backend/mlruns/
+backend/mlflow.db
+backend/.pytest_cache/
+data/raw/
+data/processed/
+models/
+notebooks/
+.env

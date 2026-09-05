@@ -6,8 +6,9 @@ segments — is identical between the two; only the alias table and the
 section-type enum differ per caller.
 """
 import re
+from collections.abc import Callable
 from statistics import median
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 from app.schemas.document import TextLine
 
@@ -38,9 +39,7 @@ def looks_like_header(line: TextLine, body_font_size: float | None) -> bool:
         return True
     if body_font_size and line.font_size and line.font_size > body_font_size * _FONT_SIZE_HEADER_RATIO:
         return True
-    if line.text.isupper():
-        return True
-    return False
+    return line.text.isupper()
 
 
 def segment_by_alias_headers(

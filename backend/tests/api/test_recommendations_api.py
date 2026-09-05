@@ -9,7 +9,6 @@ could have touched it.
 """
 import pytest
 
-from app.api.dependencies import get_taxonomy
 from app.main import app
 from app.models.resume import Resume
 from app.schemas.match_explanation import EvidencedClaim, MatchExplanation, Recommendation

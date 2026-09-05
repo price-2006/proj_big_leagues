@@ -10,9 +10,10 @@ docs/ARCHITECTURE.md §5, seeded by scripts/seed_skills.py (Phase 5).
 service lands in Phase 6.
 """
 import sqlalchemy as sa
-from alembic import op
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0002"
 down_revision = "0001"

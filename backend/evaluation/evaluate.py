@@ -107,7 +107,7 @@ def _compute_metrics(df, scores: np.ndarray, model_type: str) -> dict[str, float
         "roc_auc": float(roc_auc_score(y_true_binary, scores)) if len(set(y_true_binary)) > 1 else None,
         "ndcg_at_5": ndcg_at_k_grouped(labels.tolist(), scores.tolist(), df["resume_ref"].tolist(), k=5),
         "mrr": mrr_grouped(labels.tolist(), scores.tolist(), df["resume_ref"].tolist()),
-        "n": int(len(df)),
+        "n": len(df),
     }
 
 
@@ -123,7 +123,7 @@ async def evaluate_split(split: str) -> dict[str, dict[str, dict[str, float | in
     print(f"'{split}' split: {len(split_df)} rows across label sources: {label_sources}")
 
     results: dict[str, dict[str, dict[str, float | int | None]]] = {}
-    for model_type in ["rule_based", "embedding_cosine"] + TRAINED_MODEL_TYPES:
+    for model_type in ["rule_based", "embedding_cosine", *TRAINED_MODEL_TYPES]:
         try:
             scores = _model_scores(model_type, split_df)
         except FileNotFoundError:

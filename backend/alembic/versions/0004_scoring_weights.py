@@ -16,8 +16,9 @@ migrations should stay replayable even if that module changes later; keep
 the two in sync by hand if DEFAULT_WEIGHTS ever changes.
 """
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0004"
 down_revision = "0003"

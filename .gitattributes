@@ -1,0 +1,9 @@
+# Phase 15: found by actually testing a fresh checkout, not by
+# inspection — Windows git's common core.autocrlf=true default converts
+# LF to CRLF on checkout, which turns docker/backend-entrypoint.sh's
+# shebang into "#!/bin/sh\r", and a Linux container's exec() then reports
+# "no such file or directory" (looking for an interpreter literally named
+# "/bin/sh\r"), not a permissions or syntax problem. Shell scripts must
+# stay LF regardless of who clones this repo or what their global git
+# config does.
+*.sh text eol=lf

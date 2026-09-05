@@ -23,7 +23,6 @@ time, and the whole run commits in one transaction) — found this the
 hard way when the first version of this migration's DELETE left exact
 duplicates behind and the CREATE UNIQUE INDEX below still failed.
 """
-import sqlalchemy as sa
 from alembic import op
 
 revision = "0008"
