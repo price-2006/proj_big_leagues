@@ -14,7 +14,15 @@ import httpx
 import pytest
 from pydantic import BaseModel
 
-from app.services.llm_service import DEFAULT_OLLAMA_MODEL, LLMGenerationError, LocalLLMService
+from app.services.llm_service import (
+    DEFAULT_GROQ_MODEL,
+    DEFAULT_OLLAMA_MODEL,
+    GROQ_BASE_URL,
+    LLMGenerationError,
+    LocalLLMService,
+    OpenAILLMService,
+    get_llm_service,
+)
 
 LOCAL_OLLAMA_BASE_URL = "http://host.docker.internal:11434"
 
@@ -51,3 +59,54 @@ async def test_local_llm_service_wraps_unreachable_server_as_llm_generation_erro
     service = LocalLLMService(base_url="http://127.0.0.1:1", model=DEFAULT_OLLAMA_MODEL)  # nothing listens on port 1
     with pytest.raises(LLMGenerationError):
         await service.generate_structured("anything", _Sentiment)
+
+
+def test_openai_service_passes_a_custom_base_url_to_the_client():
+    """Groq (and any other OpenAI-compatible host) reuses OpenAILLMService
+    entirely via this one constructor arg — no separate class."""
+    service = OpenAILLMService(api_key="fake-key", model="some-model", base_url="https://example.com/v1")
+    client = service._get_client()
+    assert str(client.base_url).rstrip("/") == "https://example.com/v1"
+
+
+def test_openai_service_defaults_to_the_real_openai_base_url_when_unset():
+    service = OpenAILLMService(api_key="fake-key", model="some-model")
+    client = service._get_client()
+    assert "api.openai.com" in str(client.base_url)
+
+
+def test_get_llm_service_builds_a_groq_configured_openai_service(monkeypatch):
+    from app import config
+    from app.services import llm_service as llm_service_module
+
+    # llm_model=None explicitly: this container's own ambient environment
+    # has LLM_MODEL=qwen2.5 set (for local Ollama dev testing), and
+    # Settings(_env_file=None) still reads real process env vars — found
+    # by this exact test failing against that leaked value, same lesson
+    # as tests/test_config.py's equivalent fix.
+    fake_settings = config.Settings(_env_file=None, llm_provider="groq", llm_api_key="fake-groq-key", llm_model=None)
+    monkeypatch.setattr(llm_service_module, "get_settings", lambda: fake_settings)
+    llm_service_module.get_llm_service.cache_clear()
+    try:
+        service = get_llm_service()
+        assert isinstance(service, OpenAILLMService)
+        assert service.model_name == DEFAULT_GROQ_MODEL
+        client = service._get_client()
+        assert str(client.base_url).rstrip("/") == GROQ_BASE_URL
+    finally:
+        llm_service_module.get_llm_service.cache_clear()
+
+
+def test_get_llm_service_raises_without_an_api_key_for_groq(monkeypatch):
+    from app import config
+    from app.services import llm_service as llm_service_module
+
+    fake_settings = config.Settings(_env_file=None, llm_provider="groq", llm_api_key=None)
+    monkeypatch.setattr(llm_service_module, "get_settings", lambda: fake_settings)
+    llm_service_module.get_llm_service.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="groq"):
+            get_llm_service()
+    finally:
+        llm_service_module.get_llm_service.cache_clear()
+

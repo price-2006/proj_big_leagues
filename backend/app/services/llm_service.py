@@ -6,19 +6,23 @@ every other service function in this codebase (AsyncSession throughout)
 — a sync HTTP call here would block the event loop inside a FastAPI
 request handler.
 
-Three implementations, not one, because ARCHITECTURE.md §9 names all
-three explicitly (`AnthropicLLMService`, `OpenAILLMService`,
-`LocalLLMService`) and each earns its place differently here:
-  - Anthropic and OpenAI are the two real hosted providers a production
-    deployment would use.
+Four implementations, not one, because ARCHITECTURE.md §9 names three
+explicitly (`AnthropicLLMService`, `OpenAILLMService`, `LocalLLMService`)
+plus a fourth (`groq`, added for the public deployment's free tier) that
+reuses `OpenAILLMService` rather than earning its own class — Groq's API
+is OpenAI-compatible, so the only difference is which `base_url` the
+OpenAI SDK talks to:
+  - Anthropic and OpenAI are the two real paid hosted providers.
+  - Groq: free tier, OpenAI-compatible, hosts Llama/Qwen/GPT-OSS models —
+    no VM changes needed, unlike self-hosting a model.
   - Local (Ollama) is what this session could actually exercise live —
     no LLM_API_KEY is configured in this environment, but Ollama is
     already installed with local models, so it's the one provider this
     phase's tests genuinely call end-to-end rather than only mocking.
 
 Each provider gets the structured output from the model differently
-(Anthropic: forced tool-use; OpenAI: native structured-output JSON
-schema; Ollama: its own `format` JSON-schema constraint), but all three
+(Anthropic: forced tool-use; OpenAI/Groq: native structured-output JSON
+schema; Ollama: its own `format` JSON-schema constraint), but all
 converge on the same contract: parse to a dict, then
 `response_schema.model_validate(...)` — the Pydantic model is what's
 trusted, never "the SDK says this matches."
@@ -36,6 +40,13 @@ T = TypeVar("T", bound=BaseModel)
 DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5"
 DEFAULT_OPENAI_MODEL = "gpt-4o"
 DEFAULT_OLLAMA_MODEL = "qwen2.5"
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+# Groq's Qwen lineup moved past 2.5 (confirmed live against Groq's docs,
+# not assumed) — "qwen/qwen3.6-27b" is the closest available today, but
+# it's tagged Preview there, not a stable Production model. If it proves
+# flaky, "llama-3.3-70b-versatile" is Groq's sturdier default — override
+# via LLM_MODEL either way, nothing here is hardcoded past this default.
+DEFAULT_GROQ_MODEL = "qwen/qwen3.6-27b"
 
 
 class LLMGenerationError(Exception):
@@ -97,9 +108,14 @@ class AnthropicLLMService:
 
 
 class OpenAILLMService:
-    def __init__(self, api_key: str, model: str) -> None:
+    """Also backs the `groq` provider (get_llm_service below) — Groq's
+    API is OpenAI-compatible, so pointing `base_url` at Groq's endpoint
+    instead of OpenAI's is the entire difference."""
+
+    def __init__(self, api_key: str, model: str, base_url: str | None = None) -> None:
         self._api_key = api_key
         self._model = model
+        self._base_url = base_url
         self._client = None
 
     @property
@@ -130,7 +146,7 @@ class OpenAILLMService:
         if self._client is None:
             from openai import AsyncOpenAI
 
-            self._client = AsyncOpenAI(api_key=self._api_key)
+            self._client = AsyncOpenAI(api_key=self._api_key, base_url=self._base_url)
         return self._client
 
 
@@ -178,6 +194,10 @@ def get_llm_service() -> LLMService:
         if not settings.llm_api_key:
             raise ValueError("LLM_API_KEY is required for llm_provider=openai")
         return OpenAILLMService(settings.llm_api_key, settings.llm_model or DEFAULT_OPENAI_MODEL)
+    if settings.llm_provider == "groq":
+        if not settings.llm_api_key:
+            raise ValueError("LLM_API_KEY is required for llm_provider=groq")
+        return OpenAILLMService(settings.llm_api_key, settings.llm_model or DEFAULT_GROQ_MODEL, base_url=GROQ_BASE_URL)
     if settings.llm_provider == "local":
         return LocalLLMService(settings.ollama_base_url, settings.llm_model or DEFAULT_OLLAMA_MODEL)
     raise ValueError(f"Unknown llm_provider: {settings.llm_provider!r}")

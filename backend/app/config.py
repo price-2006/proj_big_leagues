@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     embedding_model_provider: str = "sentence_transformers"
     embedding_model_name: str = "all-MiniLM-L6-v2"
 
-    # Phase 12
+    # Phase 12. llm_provider: anthropic | openai | groq | local
     llm_provider: str = "anthropic"
     llm_api_key: str | None = None
     llm_model: str | None = None  # per-provider default used if unset — see app/services/llm_service.py
