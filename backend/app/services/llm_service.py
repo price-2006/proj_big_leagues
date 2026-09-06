@@ -41,12 +41,17 @@ DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5"
 DEFAULT_OPENAI_MODEL = "gpt-4o"
 DEFAULT_OLLAMA_MODEL = "qwen2.5"
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-# Groq's Qwen lineup moved past 2.5 (confirmed live against Groq's docs,
-# not assumed) — "qwen/qwen3.6-27b" is the closest available today, but
-# it's tagged Preview there, not a stable Production model. If it proves
-# flaky, "llama-3.3-70b-versatile" is Groq's sturdier default — override
-# via LLM_MODEL either way, nothing here is hardcoded past this default.
-DEFAULT_GROQ_MODEL = "qwen/qwen3.6-27b"
+# Confirmed against a real deployed API key, not docs — docs proved stale
+# twice over: "qwen2.5" doesn't exist on Groq at all anymore, and neither
+# does "llama-3.3-70b-versatile" (404 model_not_found), despite both being
+# documented elsewhere as available. Queried GET /openai/v1/models
+# directly to get ground truth, then verified "openai/gpt-oss-120b"
+# end-to-end against this codebase's real MatchExplanation schema — a
+# Production-tier (not Preview) model, and it produced a valid, schema-
+# passing, evidence-checked recommendation. Override via LLM_MODEL if
+# Groq's catalog moves again; check /openai/v1/models first next time
+# instead of trusting a docs page or this comment.
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 
 
 class LLMGenerationError(Exception):
