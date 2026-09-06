@@ -79,6 +79,26 @@ def test_strict_json_schema_sets_additional_properties_false_on_every_nested_obj
         assert definition.get("additionalProperties") is False, f"{name} is missing additionalProperties: false"
 
 
+def test_strict_json_schema_requires_every_property_even_ones_with_a_python_default():
+    """Regression test for a second real failure found the same way:
+    Groq rejected EvidencedClaim's schema because `is_inference` (a bool
+    field with a Python-side default of False) wasn't in `required` —
+    Pydantic itself correctly excludes defaulted fields from `required`,
+    but strict mode wants every property listed regardless."""
+    from app.schemas.match_explanation import MatchExplanation
+    from app.services.llm_service import _strict_json_schema
+
+    schema = _strict_json_schema(MatchExplanation)
+
+    evidenced_claim = schema["$defs"]["EvidencedClaim"]
+    assert set(evidenced_claim["required"]) == set(evidenced_claim["properties"].keys())
+    assert "is_inference" in evidenced_claim["required"]  # has a Python default; still must be required here
+
+    recommendation = schema["$defs"]["Recommendation"]
+    assert set(recommendation["required"]) == set(recommendation["properties"].keys())
+    assert "fabricated_metric" in recommendation["required"]  # same situation
+
+
 def test_openai_service_passes_a_custom_base_url_to_the_client():
     """Groq (and any other OpenAI-compatible host) reuses OpenAILLMService
     entirely via this one constructor arg — no separate class."""

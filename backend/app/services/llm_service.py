@@ -58,20 +58,29 @@ class LLMGenerationError(Exception):
 
 
 def _strict_json_schema(response_schema: type[BaseModel]) -> dict:
-    """OpenAI-compatible structured-output mode (`strict: true`) requires
-    `additionalProperties: false` on *every* object in the schema tree,
-    including each nested model under `$defs` — not just the top level.
-    Pydantic's `model_json_schema()` doesn't set this by default (found
-    live: Groq's API rejected the raw schema with exactly this error on
-    a nested model, `MatchExplanation`'s `Recommendation`). Anthropic's
-    forced-tool-use and Ollama's `format` don't need this same recursive
-    strictness, so it's scoped to this class, not a shared schema step."""
+    """OpenAI-compatible structured-output mode (`strict: true`) imposes
+    two rules Pydantic's `model_json_schema()` doesn't apply on its own,
+    on *every* object in the schema tree (including each nested model
+    under `$defs`, not just the top level) — both found live, one at a
+    time, against Groq's real API, not read off a spec in advance:
+      1. `additionalProperties: false` — Pydantic only sets this when a
+         model has `model_config = ConfigDict(extra="forbid")`.
+      2. Every key in `properties` must also appear in `required` — even
+         ones with a Python-side default (e.g. `is_inference: bool =
+         False`), which Pydantic's own schema correctly excludes from
+         `required` since they're optional to *construct*, not to
+         *serialize*. Strict mode conflates "present in the payload"
+         with "required to construct", so this is forced regardless.
+    Anthropic's forced-tool-use and Ollama's `format` don't need this
+    same recursive strictness, so it's scoped to this class only."""
     schema = response_schema.model_json_schema()
 
     def _walk(node: object) -> None:
         if isinstance(node, dict):
             if node.get("type") == "object" or "properties" in node:
                 node.setdefault("additionalProperties", False)
+                if "properties" in node:
+                    node["required"] = list(node["properties"].keys())
             for value in node.values():
                 _walk(value)
         elif isinstance(node, list):
