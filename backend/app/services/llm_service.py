@@ -57,6 +57,31 @@ class LLMGenerationError(Exception):
     never as a reason to fall back to unvalidated output."""
 
 
+def _strict_json_schema(response_schema: type[BaseModel]) -> dict:
+    """OpenAI-compatible structured-output mode (`strict: true`) requires
+    `additionalProperties: false` on *every* object in the schema tree,
+    including each nested model under `$defs` — not just the top level.
+    Pydantic's `model_json_schema()` doesn't set this by default (found
+    live: Groq's API rejected the raw schema with exactly this error on
+    a nested model, `MatchExplanation`'s `Recommendation`). Anthropic's
+    forced-tool-use and Ollama's `format` don't need this same recursive
+    strictness, so it's scoped to this class, not a shared schema step."""
+    schema = response_schema.model_json_schema()
+
+    def _walk(node: object) -> None:
+        if isinstance(node, dict):
+            if node.get("type") == "object" or "properties" in node:
+                node.setdefault("additionalProperties", False)
+            for value in node.values():
+                _walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    _walk(schema)
+    return schema
+
+
 class LLMService(Protocol):
     @property
     def model_name(self) -> str: ...
@@ -132,7 +157,7 @@ class OpenAILLMService:
                     "type": "json_schema",
                     "json_schema": {
                         "name": response_schema.__name__,
-                        "schema": response_schema.model_json_schema(),
+                        "schema": _strict_json_schema(response_schema),
                         "strict": True,
                     },
                 },

@@ -61,6 +61,24 @@ async def test_local_llm_service_wraps_unreachable_server_as_llm_generation_erro
         await service.generate_structured("anything", _Sentiment)
 
 
+def test_strict_json_schema_sets_additional_properties_false_on_every_nested_object():
+    """Regression test for a real failure found by actually calling Groq:
+    'additionalProperties:false must be set on every object' on a nested
+    model (MatchExplanation's Recommendation, under $defs) — Pydantic's
+    model_json_schema() doesn't set this itself. Using the real schema
+    that failed, not a synthetic stand-in."""
+    from app.schemas.match_explanation import MatchExplanation
+    from app.services.llm_service import _strict_json_schema
+
+    schema = _strict_json_schema(MatchExplanation)
+
+    assert schema["additionalProperties"] is False
+    defs = schema.get("$defs", {})
+    assert defs, "expected MatchExplanation to have nested $defs (EvidencedClaim, Recommendation)"
+    for name, definition in defs.items():
+        assert definition.get("additionalProperties") is False, f"{name} is missing additionalProperties: false"
+
+
 def test_openai_service_passes_a_custom_base_url_to_the_client():
     """Groq (and any other OpenAI-compatible host) reuses OpenAILLMService
     entirely via this one constructor arg — no separate class."""
